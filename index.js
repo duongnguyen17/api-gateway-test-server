@@ -18,18 +18,70 @@ app.use(express.json());
 
 // Logging: Log all incoming requests (method, url, headers, body)
 // API Gateway Note: Test if the Gateway correctly forwards these fields
-app.use(
-  morgan((tokens, req, res) => {
-    return [
-      tokens.method(req, res),
-      tokens.url(req, res),
-      "Headers:",
-      JSON.stringify(req.headers),
-      "Body:",
-      JSON.stringify(req.body),
-    ].join(" ");
-  }),
-);
+// app.use(
+//   morgan((tokens, req, res) => {
+//     return [
+//       tokens.method(req, res),
+//       tokens.url(req, res),
+//       "Headers:",
+//       JSON.stringify(req.headers),
+//       "Body:",
+//       JSON.stringify(req.body),
+//     ].join(" ");
+//   }),
+// );
+
+// 1. Access log (ngắn gọn)
+
+app.use(morgan("combined"));
+
+// 2. Debug request (chi tiết)
+
+app.use((req, res, next) => {
+  console.log("\n===== REQUEST START =====");
+
+  console.log("Method:", req.method);
+
+  console.log("Original URL:", req.originalUrl);
+
+  console.log("Base URL:", req.baseUrl);
+
+  console.log("Path:", req.path);
+
+  console.log("Query:", req.query);
+
+  console.log("Headers:", req.headers);
+
+  console.log("Body:", req.body);
+
+  console.log("IP:", req.ip);
+
+  console.log("X-Forwarded-For:", req.headers["x-forwarded-for"]);
+
+  console.log("===== REQUEST END =====");
+
+  next();
+});
+
+// 3. Debug response (rất hữu ích khi bị 404/500)
+
+app.use((req, res, next) => {
+  const oldSend = res.send;
+
+  res.send = function (data) {
+    console.log("----- RESPONSE START -----");
+
+    console.log("Status:", res.statusCode);
+
+    console.log("Response Body:", data);
+
+    console.log("----- RESPONSE END -----\n");
+
+    return oldSend.apply(res, arguments);
+  };
+
+  next();
+});
 
 const swaggerDocument = JSON.parse(
   fs.readFileSync(path.join(__dirname, "swagger.json"), "utf8"),
